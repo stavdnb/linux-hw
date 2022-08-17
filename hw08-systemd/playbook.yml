@@ -1,0 +1,94 @@
+---
+- name:  Configure host newvm
+  hosts: newvm
+  become: yes
+  vars:
+    epel: epel-release
+    packages: 
+      - spawn-fcgi
+      - php
+      - php-cli
+      - mod_fcgid
+      - httpd
+      - wget
+      - dejavu-sans-fonts
+      - fontconfig
+      - lynx
+    unit_files_dst_path: /etc/systemd/system/
+    httpd_conf_path:  /etc/httpd/conf/
+    sysconfig_path: /etc/sysconfig/
+
+  tasks:
+    - name: Install EPEL Repo package
+      yum:
+        name: "{{ epel }}"
+        state: present
+      tags:
+        - epel-installation
+
+    - name: Install requied packages
+      yum:
+        name: "{{ packages }}"
+        state: present
+      tags:
+        - install-packages
+
+    - name: Copy files for configure services
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: root
+        group: root
+        mode: "{{ item.mode }}"
+      with_items:
+        - { src: 'files/watchlog.conf', dest: '/etc/sysconfig', mode: '0644' }
+        - { src: 'files/watchlog.log', dest: '/var/log', mode: '0644' }
+        - { src: 'files/watchlog.sh', dest: '/opt', mode: '0744' }
+        - { src: 'files/watchlog.timer', dest: '{{ unit_files_dst_path }}', mode: '0644' }
+        - { src: 'files/watchlog.service', dest: '{{ unit_files_dst_path }}', mode: '0644' }
+        - { src: 'files/httpd@.service', dest: '{{ unit_files_dst_path }}', mode: '0644' }
+        - { src: 'files/jira.service', dest: '{{ unit_files_dst_path }}', mode: '0664' }
+        - { src: 'files/first.conf', dest: '{{ httpd_conf_path }}', mode: '0644' }
+        - { src: 'files/second.conf', dest: '{{ httpd_conf_path }}', mode: '0644' }
+        - { src: 'files/httpd-first', dest: '{{ sysconfig_path }}', mode: '0644' }
+        - { src: 'files/httpd-second', dest: '{{ sysconfig_path }}', mode: '0644' }
+        - { src: 'files/response.varfile', dest: '/tmp/', mode: '0644' }
+
+    - name: Download jira service desk installation file
+      get_url:
+        url: https://product-downloads.atlassian.com/software/jira/downloads/atlassian-servicedesk-4.13.1-x64.bin
+        dest: /tmp/atlassian-servicedesk-4.13.1-x64.bin
+        mode: 0744
+        validate_certs: no
+
+    - name: Check jira previous installation
+      stat:
+        path: /opt/atlassian/jira/bin/start-jira.sh
+      register: jira_installation_exist
+
+    - name: Install jira service desk
+      shell: ./atlassian-servicedesk-4.13.1-x64.bin -q -varfile response.varfile
+      args:
+        chdir: /tmp
+      when: jira_installation_exist.stat.exists == False
+    
+    - name: Recursively change ownership of a directory there jira installed
+      file:
+        path: /opt/atlassian/jira/
+        state: directory
+        recurse: yes
+        owner: jira
+        group: jira
+          
+    - name: Start services      
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+        daemon_reload: yes
+      with_items:
+        - watchlog.timer
+        - watchlog.service
+        - httpd@first
+        - httpd@second
+        - jira.service
