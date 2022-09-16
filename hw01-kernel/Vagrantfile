@@ -4,4 +4,4 @@ Vagrant.configure("2") do |config|
   #shared folders
   config.vm.synced_folder "~/shared_os" , "/vagrant"
   config.vm.host_name = "vagrantVM"
-end
+enddnskfnskdskfnsdkfnsdkjfnkdsjnfskdnfsdkjnfskdn
