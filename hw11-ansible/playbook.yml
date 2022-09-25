@@ -1,0 +1,6 @@
+  - name: Configure nginx host
+    hosts: testvm
+    gather_facts: true
+    become: true
+    roles:
+      - nginx_role
