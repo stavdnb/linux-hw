@@ -1,0 +1,7 @@
+
+# vars file for nginx_role
+  
+packages:
+  - policycoreutils-python
+  - setools-console
+    #- yum-utils
