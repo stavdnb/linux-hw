@@ -50,6 +50,7 @@ aabde1346eb9   prom/node-exporter:v1.3.0          "/bin/node_exporter …"   25 
 
 3. Заходим в grafana. Настраиваем Data source и [Dashboard](https://grafana.com/grafana/dashboards/12486).
 
+![image](https://user-images.githubusercontent.com/85901437/195193053-6717dde6-7b40-44e9-8933-2980950449b1.png)
 
 ## **Полезное:**
 
