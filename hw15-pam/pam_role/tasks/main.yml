@@ -1,0 +1,86 @@
+---
+- name: Install requied packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+
+- name: Install requied packages from epel-release
+  yum:
+    name: "{{ epel_packages }}"
+    state: present
+
+- name: Add admin group
+  group:
+    name: admin
+    state: present
+
+- debug:
+    var: "{{ item }}"
+  with_items:
+    - user1_password
+    - user2_password
+
+- name: Add the users 
+  user:
+    name: "{{ item.name }}"
+    shell: /bin/bash
+    password: "{{ item.password | password_hash('sha512') }}"
+    groups:  "{{ item.groups }}"
+    append: yes
+  with_items:
+    - { name: user1, groups: "", password: "{{ user1_password }}" }
+    - { name: user2, groups: "admin", password: "{{ user2_password }}" }
+
+- name: Enable ssh password authentication 
+  lineinfile: 
+    dest: /etc/ssh/sshd_config
+    regexp: 'PasswordAuthentication no'
+    line: 'PasswordAuthentication yes'
+    backrefs: yes
+  notify: restart_sshd
+
+- name: Insert line into /etc/pam.d/sshd
+  lineinfile:
+       path: /etc/pam.d/sshd
+       line: 'account    required     pam_exec.so /usr/local/bin/test_login.sh'
+       insertafter: 'account    required     pam_nologin.so'
+
+- name: Copy login script
+  template:
+    src: test_login.sh.j2
+    dest: /usr/local/bin/test_login.sh
+    owner: root
+    group: root
+    mode: 0544
+
+- name: Add Docker repo
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docer-ce.repo
+
+- name: Install Docker packages
+  yum:
+    name: "{{ docker_packages }}"
+    state: present
+
+- name: Start Docker service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add user vagrant to docker group
+  user:
+    name: vagrant
+    groups: docker
+    append: yes
+
+- name: Copy polkit rule
+  template:
+    src: 01-systemd.rules.j2
+    dest: /etc/polkit-1/rules.d/01-systemd.rules
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart_polkit
+      
