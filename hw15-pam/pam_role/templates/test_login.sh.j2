@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ $PAM_USER == "vagrant" ]; then exit 0; fi
+
+day=$(date +%u)
+
+if [ $day -ge {{ saturday }} -a $day -le {{ sunday }} ]; then
+  weekend=1
+else
+  weekend=0
+fi
+
+if getent group admin | grep &>/dev/null $PAM_USER; then
+    exit 0
+else
+  if [ $weekend -eq 1 ]; then
+      exit 1
+  else
+      exit 0
+  fi
+fi
