@@ -1,0 +1,4 @@
+---
+# vars file for ./provision/roles/log-role
+packages:
+  - systemd-journal-gateway
