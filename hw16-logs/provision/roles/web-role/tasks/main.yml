@@ -1,0 +1,36 @@
+---
+# tasks file for ./provision/roles/web-role
+- name: Install requied packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+
+- name: Copy nginx config file from template
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: "{{ nginx_conf_mode }}"
+  notify:
+    - reload_nginx
+
+- name: Configure auditd
+  copy: 
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0640'
+  with_items:
+    - { src: 'files/au-remote.conf', dest: '/etc/audisp/plugins.d/au-remote.conf' } 
+    - { src: 'files/audisp-remote.conf', dest: '/etc/audisp/audisp-remote.conf' }
+    - { src: 'files/nginx.rules', dest: '/etc/audit/rules.d/nginx.rules' }
+  notify:
+      - restart_auditd
+
+- name: Configure host for journal-upload
+  copy:
+    src: files/journal-upload.conf
+    dest: /etc/systemd/journal-upload.conf
+  notify: restart_systemd-journal-upload

@@ -1,0 +1,27 @@
+---
+# handlers file for ./provision/roles/web-role
+- name: restart_nginx
+  systemd:
+    name: nginx
+    state: restarted
+    enabled: yes
+    
+- name: reload_nginx
+  systemd:
+    name: nginx
+    state: reloaded
+
+- name: restart_auditd
+  shell: |
+    systemctl daemon-reload
+    service auditd restart
+  args:
+    executable: /bin/bash
+    warn: no
+
+- name: restart_systemd-journal-upload
+  systemd:
+    name: systemd-journal-upload
+    state: restarted
+
+
