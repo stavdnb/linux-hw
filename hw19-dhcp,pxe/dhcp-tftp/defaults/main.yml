@@ -1,0 +1,9 @@
+dhcp_network: 10.10.10.0
+
+dhcp_mask: 255.255.255.0
+
+dhcp_range_min: 10.10.10.100
+
+dhcp_range_max: 10.10.10.120
+
+pxe_server: 10.10.10.20

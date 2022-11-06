@@ -1,0 +1,5 @@
+- hosts: pxeserver
+  become: true
+  roles:
+    - web-server
+    - dhcp-tftp
