@@ -1,0 +1,7 @@
+---
+#Перезупускаем httpd и добавляем службу в автозагрузку
+- name: restart httpd 
+  service:
+    name: httpd 
+    state: restarted 
+    enabled: true

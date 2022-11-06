@@ -1,0 +1,35 @@
+# display a menu with a list of installation options
+default menu.c32
+# show prompt, 0 - disabled, 1 - enabled
+prompt 0
+# timeout, 1 second = 10
+timeout 150
+# pick label on timeout
+ONTIMEOUT 1
+
+menu title OTUS PXE Boot Menu
+       #Описание первой строки
+    	 label 1
+       #Имя, отображаемое в первой строке
+       menu label ^ Graph install CentOS 8.4
+       #Адрес ядра, расположенного на TFTP-сервере
+       kernel /vmlinuz
+       #Адрес файла initrd, расположенного на TFTP-сервере
+       initrd /initrd.img
+       #Получаем адрес по DHCP и указываем адрес веб-сервера
+       append ip=enp0s3:dhcp inst.repo=http://10.10.10.20/centos8
+       label 2
+       menu label ^ Text install CentOS 8.4
+       kernel /vmlinuz
+       initrd /initrd.img
+       append ip=enp0s3:dhcp inst.repo=http://10.10.10.20/centos8 text
+       label 3
+       menu label ^ rescue installed system
+       kernel /vmlinuz
+       initrd /initrd.img
+       append ip=enp0s3:dhcp inst.repo=http://10.10.10.20/centos8 rescue
+
+			 label 4
+			 menu label ^4) Base Unattended CentOS 8 Kickstart Install in Text Mode
+			 kernel /vmlinuz
+			 append initrd=/initrd.img inst.ks=http://10.10.10.20/centos8/ks.cfg inst.repo=http://10.10.10.20/centos8/
