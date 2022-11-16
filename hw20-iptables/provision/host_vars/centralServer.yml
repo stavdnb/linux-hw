@@ -1,0 +1,13 @@
+---
+gw:
+  - dev: eth1
+    nh: 10.10.0.1
+
+packages:
+  - nginx
+  - tcpdump
+
+services:
+  - name: nginx
+    state: started
+    enabled: yes

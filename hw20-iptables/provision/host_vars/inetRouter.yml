@@ -1,0 +1,16 @@
+---
+routes:
+  - dev: eth1
+    route: '10.10.0.0/22 10.10.255.2'
+packages:
+  - iptables-services
+  - tcpdump
+
+services:
+  - name: firewalld
+    state: stopped
+    enabled: no
+
+  - name: iptables
+    state: started
+    enabled: yes
