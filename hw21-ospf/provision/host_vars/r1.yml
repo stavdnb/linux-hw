@@ -1,0 +1,12 @@
+---
+lo_ip: 10.10.5.1
+default_information: ' default-information originate always'
+enp0s8_cost: '20'
+enp0s9_cost: '20'
+enp0s8_ip: '10.10.1.1'
+enp0s9_ip: '10.10.2.1'
+net_enp0s8: '10.10.1.0/29'
+net_enp0s9: '10.10.2.0/29'
+net_enp0s10: '10.10.10.0/29'
+neighbor_1: '10.10.1.2'
+neighbor_2: '10.10.2.3'

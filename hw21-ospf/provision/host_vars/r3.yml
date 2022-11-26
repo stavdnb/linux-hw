@@ -1,0 +1,13 @@
+---
+lo_ip: 10.10.5.3
+default_information: '!'
+enp0s8_cost: '20'
+enp0s9_cost: '20'
+enp0s8_ip: '10.10.2.3'
+enp0s9_ip: '10.10.3.3'
+enp0s10_ip: '10.10.30.3'
+net_enp0s8: '10.10.2.0/29'
+net_enp0s9: '10.10.3.0/29'
+net_enp0s10: '10.10.30.0/29'
+neighbor_1: '10.10.2.1'
+neighbor_2: '10.10.3.2'

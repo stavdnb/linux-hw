@@ -1,0 +1,14 @@
+---
+# handlers file for provision/router-role
+
+- name: disable ufw service 
+  service:
+    name: ufw 
+    state: stopped 
+    enabled: false
+
+- name: restart frr
+  service:
+    name: frr
+    state: restarted 
+    enabled: true    
