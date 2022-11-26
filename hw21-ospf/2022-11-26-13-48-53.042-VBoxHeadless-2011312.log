@@ -1,0 +1,12 @@
+Log created: 2022-11-26T13:48:53.429762000Z
+Process ID:  2011312 (0x1eb0b0)
+Parent PID:  1 (0x1)
+Executable:  /usr/lib/virtualbox/VBoxHeadless
+Arg[0]: /usr/lib/virtualbox/VBoxHeadless
+Arg[1]: --comment
+Arg[2]: hw21-ospf_r3_1669400429286_66124
+Arg[3]: --startvm
+Arg[4]: e283094a-711a-4d5a-b8ce-56bb6103c1c0
+Arg[5]: --vrde
+Arg[6]: config
+AddRef: illegal refcnt=3221225469 state=2

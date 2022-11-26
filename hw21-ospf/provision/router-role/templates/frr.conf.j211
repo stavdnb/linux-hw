@@ -1,0 +1,9 @@
+hostname {{ ansible_hostname }}
+router ospf
+{% if ansible_hostname == 'r1' %}
+ ip ospf cost 1000
+{% elif ansible_hostname == 'r2' and symmetric_routing == true %}
+ ip ospf cost 1000
+{% else %}
+ !ip ospf cost 450
+{% endif %}

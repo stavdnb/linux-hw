@@ -1,0 +1,34 @@
+!
+hostname {{ ansible_hostname }}
+!
+interface enp0s3
+!
+interface enp0s8
+ description r1-r2
+ !ip address {{ enp0s8_ip }}
+ ip ospf cost {{ enp0s8_cost }}
+!
+interface enp0s9
+ description r1-r3
+ !ip address {{ enp0s9_ip }}
+
+ ip ospf cost {{ enp0s9_cost }}
+!
+interface lo
+!
+router ospf
+ ospf router-id {{ lo_ip }}
+ passive-interface default
+ no passive-interface enp0s8
+ no passive-interface enp0s9
+ !network {{ lo_ip }}/32 area 0.0.0.0
+ network {{ net_enp0s8 }}  area 0.0.0.0
+ network {{ net_enp0s9 }}  area 0.0.0.0
+ network {{ net_enp0s10 }}  area 0.0.0.0
+ neighbor {{ neighbor_1 }}
+ neighbor {{ neighbor_2 }}
+log file /var/log/frr/frr.log
+default-information originate always
+!
+line vty
+!

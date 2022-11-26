@@ -1,0 +1,64 @@
+---
+# tasks file for provision/router-role
+
+- name: install base tools
+  apt: 
+    name:
+      - vim
+      - traceroute 
+      - tcpdump
+      - net-tools
+    state: present 
+    update_cache: true
+
+# Обновляем пакеты и устанавливаем FRR
+- name: install FRR packages 
+  apt:
+    name:
+      - frr
+      - frr-pythontools 
+    state: present 
+    update_cache: true
+
+
+- name: set up forward packages across routers 
+  sysctl:
+    name: net.ipv4.conf.all.forwarding 
+    value: '1'
+    state: present
+# Разрешаем проброс IP     
+- name: set up forward ip
+  sysctl:
+    name: net.ipv4.ip_forward 
+    value: '1'
+    state: present
+# Отключаем запрет ассиметричного роутинга
+- name: set up asynchronous routing 
+  sysctl:
+    name: net.ipv4.conf.all.rp_filter 
+    value: '0'
+    state: present
+  tags:
+    - deny_asr
+
+- name: base set up OSPF 
+  template:
+    src: daemons
+    dest: /etc/frr/daemons 
+    owner: frr
+    group: frr
+    mode: 0640
+  
+
+- name: set up OSPF 
+  template:
+    src: frr.conf.j2
+    dest: /etc/frr/frr.conf 
+    owner: frr
+    group: frr
+    mode: 0640
+  tags:
+    - setup_ospf
+  notify: 
+    - restart frr
+
