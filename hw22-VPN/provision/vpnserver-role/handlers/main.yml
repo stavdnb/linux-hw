@@ -1,0 +1,12 @@
+---
+# handlers file for provision/vpnserver-role
+- name: restart openvpn
+  systemd:
+    name: 'openvpn@server'
+    state: restarted
+    enabled: yes
+
+- name: restart network
+  service: 
+    name: network 
+    state: restarted

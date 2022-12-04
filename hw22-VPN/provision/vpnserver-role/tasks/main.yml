@@ -1,0 +1,63 @@
+---
+#tasks file for provision/vpnserver-role
+- name: Allow openvpn to listen on udp port 1194
+  seport:
+    ports: 1194
+    proto: udp
+    setype: openvpn_port_t
+    state: present
+    
+- name: Change the openvpn_t server to permissive
+  selinux_permissive:
+    name: openvpn_t
+    permissive: true
+
+- name: Create static key 
+  shell:
+    openvpn --genkey --secret /etc/openvpn/static.key
+  tags:
+    - static-key-generation
+
+- name: Fetch the static.key from the server to master
+  fetch: 
+    src=/etc/openvpn/static.key 
+    dest=buffer/
+    flat=yes
+  tags:
+    - fetch-static.key
+
+- name: Copy SystemD unit for iperf3
+  copy:
+    src: files/iperfd.service
+    dest: /etc/systemd/system/iperfd.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Enable iperf service
+  systemd:
+    state: started
+    name: iperfd
+    enabled: yes
+    daemon_reload: yes
+
+- name: Create openvpn config file from template
+  template:
+    src: templates/server.conf.j2
+    dest: /etc/openvpn/server.conf
+    owner: root
+    group: root
+  notify:
+    - restart openvpn
+    - restart network
+  tags:
+    - openvpn-server-configuration
+
+- name: set up forward ip
+  sysctl:
+    name: net.ipv4.ip_forward 
+    value: '1'
+    state: present
+
+# - name: run ovpn 
+#   shell: openvpn --config server.conf --daemon
