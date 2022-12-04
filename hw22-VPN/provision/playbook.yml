@@ -1,0 +1,70 @@
+---
+- hosts: all # part running on all hosts
+  become: true
+  
+  tasks:
+    #  - debug:
+    #  msg:
+    #  - "{{ user }}"
+    #  - "{{ group }}"
+#sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-*
+  - name: set up repo
+    replace:
+      path: "{{ item }}" 
+      regexp: 'mirrorlist' 
+      replace: '#mirrorlist'
+    with_items:
+      - /etc/yum.repos.d/CentOS-Linux-AppStream.repo
+      - /etc/yum.repos.d/CentOS-Linux-BaseOS.repo
+    #sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-*
+  - name: set up repo 
+    replace:
+      path: "{{ item }}"
+      regexp: '#baseurl=http://mirror.centos.org' 
+      replace: 'baseurl=http://vault.centos.org'
+    with_items:
+      - /etc/yum.repos.d/CentOS-Linux-AppStream.repo 
+      - /etc/yum.repos.d/CentOS-Linux-BaseOS.repo
+
+  - name: Install epel-release # переведём синтаксис yum из deprecated
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - epel-release
+ 
+  # - name: Execute the command in remote shell; stdout goes to the specified file on the remote.
+  #   shell: yum makecashe
+
+
+  # - name: Upgrade all packages
+    # ansible.builtin.yum:
+    #   name: '*'
+    #   state: latest
+
+  - name: Install needed packages 
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - openvpn 
+      - iperf3 
+      - easy-rsa
+      - tcpdump
+      - policycoreutils-python-utils
+    tags:
+      - install-packages
+
+- name: Setup vpnserver
+  hosts: vpnserver
+  become: yes
+  roles:
+    - vpnserver-role
+
+- name: Setup client
+  hosts: client
+  become: yes
+  roles:
+    - client-role

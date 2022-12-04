@@ -1,0 +1,7 @@
+---
+# handlers file for provision/vpnserver-role
+- name: restart openvpn
+  systemd:
+    name: openvpn@{{ ansible_hostname }}
+    state: restarted
+    enabled: yes

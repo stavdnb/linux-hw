@@ -1,0 +1,120 @@
+
+  - name: Install packages
+    yum:
+      name: '{{ item }}'
+      state: present
+    loop: '{{ ovpn_host_packages }}'
+
+  - name: Install easy-rsa on server
+    yum:
+      name: easy-rsa
+      state: present
+    when: (ansible_hostname == 'vpnserver')
+
+  - name: set up forward ip
+    sysctl:
+      name: net.ipv4.ip_forward 
+      value: '1'
+      state: present
+
+
+
+  - name: Init easy-rsa pki
+    shell:
+      cmd: /usr/share/easy-rsa/3.0.8/easyrsa init-pki
+      chdir: /etc/openvpn
+      creates: /etc/openvpn/pki
+    when: (ansible_hostname == 'vpnserver')
+
+  - name: Create dir for certs
+    file:
+      path: /etc/openvpn/pki/issued
+      state: directory
+      mode: '0700'
+    when: (ansible_hostname == 'vpnserver')
+
+  - name: Copy certificates and DH key to openvpn server
+    copy:
+      src: '{{ item.key }}'
+      dest: '{{ item.value }}'
+    loop: '{{ ovpn_cert_path | dict2items }}'
+    when: (ansible_hostname == 'vpnserver')
+    
+
+
+  # - name: run ovpn 
+  #   shell: openvpn --config server.conf --daemon
+
+  - name: Init easy-rsa pki
+    shell:
+      cmd: /usr/share/easy-rsa/3.0.8/easyrsa init-pki
+      chdir: /etc/openvpn
+      creates: /etc/openvpn/pki
+    when: (ansible_hostname == 'vpnserver')
+
+  - name: Create dir for certs
+    file:
+      path: /etc/openvpn/pki/issued
+      state: directory
+      mode: '0700'
+    when: (ansible_hostname == 'vpnserver')
+
+  - name: Copy certificates and DH key to openvpn server
+    copy:
+      src: '{{ item.key }}'
+      dest: '{{ item.value }}'
+    loop: '{{ ovpn_cert_path | dict2items }}'
+    when: (ansible_hostname == 'vpnserver')
+
+  - name: 'Copy root cert ca.crt and DH key to vpnserver'
+    copy:
+      src: "{{ item }}"
+      dest: /etc/openvpn/pki/
+    loop:
+      - ca.crt
+      - dh.pem
+    when: (ansible_hostname == 'vpnserver')
+
+  - name: Copy server.crt'
+    copy:
+     src: server.crt
+     dest: /etc/openvpn/pki/issued/
+    when: (ansible_hostname == 'vpnserver')
+  
+  - name: 'Copy server.key'
+    copy:
+     src: server.key
+     dest: /etc/openvpn/pki/private/
+    when: (ansible_hostname == 'vpnserver')
+  
+  - name: 'Copy ta.key'
+    copy:
+     src: ta.key
+     dest: /etc/openvpn/
+    when: (ansible_hostname == 'vpnserver')
+
+  - name: Copy keys to openvpn client
+    copy:
+      src: '{{ item }}'
+      dest: /etc/openvpn/
+    loop:
+      - ca.crt
+      - client.crt
+      - client.key
+    when: (ansible_hostname == 'client')
+
+  - name: Copy config to openvpn server
+    template:
+      src: server.conf.j2
+      dest: /etc/openvpn/server.conf
+    when: (ansible_hostname == 'vpnserver')
+    notify:
+      - restart openvpn 
+
+  - name: Copy config to openvpn client
+    template:
+      src: client.conf.j2
+      dest: /etc/openvpn/client.conf
+    when: (ansible_hostname == 'client')
+    notify:
+      - restart openvpn

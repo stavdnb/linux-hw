@@ -1,0 +1,29 @@
+---
+# tasks file for provision/client-role
+- name: Copy the file from master to client
+  copy:
+    src=buffer/static.key
+    dest=/etc/openvpn/
+  tags:
+    - get-static.key
+
+- name: Create openvpn config file from template
+  template:
+    src: templates/client.conf.j2
+    dest: /etc/openvpn/client.conf
+    owner: root
+    group: root
+  notify:
+    - restart openvpn
+    - restart network
+  tags:
+    - openvpn-client-configuration
+
+- name: set up forward ip
+  sysctl:
+    name: net.ipv4.ip_forward 
+    value: '1'
+    state: present
+
+# - name: run ovpn 
+#   shell: openvpn --config client.conf --daemon

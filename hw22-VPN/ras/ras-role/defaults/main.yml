@@ -1,0 +1,14 @@
+---
+# defaults file for roles/s2s-vpn
+ovpn_host_packages: 
+  - openvpn
+  - iperf3
+  - tcpdump
+  - policycoreutils-python-utils
+
+ovpn_cert_path:
+  server.crt: /etc/openvpn/pki/issued/
+  server.key: /etc/openvpn/pki/private/
+  ta.key: /etc/openvpn/
+  ca.crt: /etc/openvpn/pki/
+  dh.pem: /etc/openvpn/pki/
