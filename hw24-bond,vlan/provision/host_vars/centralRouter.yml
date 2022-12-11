@@ -1,0 +1,12 @@
+---
+ip4addr: 10.10.255.2/30
+gw: 
+    ip4: 10.10.255.1
+    conn_name: Team0
+vlans:
+  - vlan_name: vlan100
+    ifname: eth3
+    vlan_id: 100
+  - vlan_name: vlan101
+    ifname: eth3
+    vlan_id: 101
