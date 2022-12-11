@@ -1,0 +1,53 @@
+---
+- hosts: all # part running on all hosts
+  become: true
+
+  tasks:
+    #  - debug:
+    #  msg:
+    #  - "{{ user }}"
+    #  - "{{ group }}"
+  - name: set up repo
+    replace:
+      path: "{{ item }}" 
+      regexp: 'mirrorlist' 
+      replace: '#mirrorlist'
+    with_items:
+      - /etc/yum.repos.d/CentOS-AppStream.repo
+      - /etc/yum.repos.d/CentOS-Base.repo
+    #sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+  - name: set up repo 
+    replace:
+      path: "{{ item }}"
+      regexp: '#baseurl=http://mirror.centos.org' 
+      replace: 'baseurl=http://vault.centos.org'
+    with_items:
+      - /etc/yum.repos.d/CentOS-AppStream.repo 
+      - /etc/yum.repos.d/CentOS-Base.repo
+
+  # - name: Install epel-release
+  #   yum:
+  #     name: "{{ packages }}"
+  #     state: present
+  #   vars:
+  #     packages:
+  #     - epel-release
+
+  # - name: Install packages 
+  #   yum:
+  #     name: "{{ packages }}"
+  #     state: present
+  #   vars:
+  #     packages:
+  #       - tcpdump
+
+- hosts: inetRouter centralRouter 
+  become: true
+  roles:
+    - router-role
+
+- hosts: testClient1 testClient2 testServer1 testServer2
+  become: true
+  roles:
+    - isolated-role
+     
