@@ -1,0 +1,146 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+  - name: set up repo
+    replace:
+      path: "{{ item }}" 
+      regexp: 'mirrorlist' 
+      replace: '#mirrorlist'
+    with_items:
+      - /etc/yum.repos.d/CentOS-Linux-AppStream.repo
+      - /etc/yum.repos.d/CentOS-Linux-BaseOS.repo
+    #sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-*
+  - name: set up repo 
+    replace:
+      path: "{{ item }}"
+      regexp: '#baseurl=http://mirror.centos.org' 
+      replace: 'baseurl=http://vault.centos.org'
+    with_items:
+      - /etc/yum.repos.d/CentOS-Linux-AppStream.repo 
+      - /etc/yum.repos.d/CentOS-Linux-BaseOS.repo
+
+  - name: Install epel-release # переведём синтаксис yum из deprecated
+    yum:
+      name: "{{ packages }}"
+      state: latest
+    vars:
+      packages:
+      - epel-release
+
+  - name: install packages
+    yum: name={{ item }} state=latest 
+    loop:
+      - bind-utils
+      - chrony
+      - setools-console
+      - policycoreutils-python-utils
+
+  - name: install bind packages for ns
+    yum: name={{ item }} state=latest
+    loop:
+      - bind
+    when: inventory_hostname == "ns01" or
+          inventory_hostname == "ns02"
+
+  - name: selinux /etc/named/
+    sefcontext:
+      target: '/etc/named(/.*)?'
+      setype: named_zone_t
+      state: present
+      reload: yes
+    register: sefcontext
+    when: inventory_hostname == "ns01" or
+          inventory_hostname == "ns02"
+
+  - name: start chronyd 
+    service:
+      name: chronyd 
+      state: restarted 
+      enabled: true
+    when: inventory_hostname == "ns01" or
+          inventory_hostname == "ns02"
+
+  - name: apply  file context 
+    command: restorecon -Rv /etc/named
+    when: 
+      - sefcontext.changed
+      - inventory_hostname == "ns01" or inventory_hostname == "ns02"
+
+#Копирование файла named.zonetransfer.key на хосты с правами 0644
+#Владелец файла — root, група файла — named
+  - name: copy transferkey to all servers
+    copy: src=named.zonetransfer.key dest=/etc/named.zonetransfer.key owner=root group=named mode=0644
+    when: 
+      - inventory_hostname != "client"
+      - inventory_hostname != "client2"
+
+#Настройка хоста ns01
+#Копирование конфигурации DNS-сервера
+- hosts: ns01
+  become: yes
+  tasks:
+  - name: copy named.conf
+    copy: src=master-named.conf dest=/etc/named.conf owner=root group=named mode=0640
+  
+  #Копирование файлов с настроками зоны.
+#Будут скопированы все файлы, в имя которых начинается на «named.d»
+  - name: copy zones
+    copy: src={{ item }} dest=/etc/named/ owner=root group=named mode=0660
+    with_fileglob:
+      - "named.d*"
+
+#Копирование файла resolv.conf
+  - name: copy resolv.conf to the servers
+    copy: src=servers-resolv.conf dest=/etc/resolv.conf owner=root group=root mode=0644
+
+#Изменение прав каталога /etc/named
+#Права 670, владелец — root, группа — named 
+  - name: set /etc/named permissions
+    file: path=/etc/named owner=root group=named mode=0670
+
+#Перезапуск службы Named и добавление её в автозагрузку
+  - name: ensure named is running and enabled
+    service: name=named state=restarted enabled=yes
+
+- hosts: ns02
+  become: yes
+  tasks:
+  - name: copy named.conf
+    copy: src=slave-named.conf dest=/etc/named.conf owner=root group=named mode=0640
+
+  - name: copy resolv.conf to the servers
+    copy: src=servers-resolv.conf dest=/etc/resolv.conf owner=root group=root mode=0644
+
+  - name: set /etc/named permissions
+    file: path=/etc/named owner=root group=named mode=0670
+
+  - name: ensure named is running and enabled
+    service: name=named state=restarted enabled=yes
+    
+- hosts: client
+  become: yes
+  tasks:
+  - name: copy resolv.conf to the client
+    copy: src=client-resolv.conf dest=/etc/resolv.conf owner=root group=root mode=0644
+
+
+#Копирование конфигруационного файла rndc
+  - name: copy rndc conf file
+    copy: src=rndc.conf dest=/home/vagrant/rndc.conf owner=vagrant group=vagrant mode=0644
+#Настройка сообщения при входе на сервер  
+  - name: copy motd to the client
+    copy: src=client-motd dest=/etc/motd owner=root group=root mode=0644
+
+- hosts: client2
+  become: yes
+  tasks:
+  - name: copy resolv.conf to the client
+    copy: src=client-resolv.conf dest=/etc/resolv.conf owner=root group=root mode=0644
+
+  - name: copy rndc conf file
+    copy: src=rndc.conf dest=/home/vagrant/rndc.conf owner=vagrant group=vagrant mode=0644
+
+  - name: copy motd to the client
+    copy: src=client-motd dest=/etc/motd owner=root group=root mode=0644
+
