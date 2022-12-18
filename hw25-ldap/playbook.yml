@@ -1,0 +1,48 @@
+---
+
+- hosts: ipaserver ipaclient
+  become: true
+  
+  pre_tasks:
+  - name: Modify /etc/hosts
+    blockinfile:
+      path: /etc/hosts
+      block: |
+        10.10.11.150	ipaserver.otus.lab	ipaserver
+        10.10.11.10	  ipaclient.otus.lab	client
+        #        nameserver 10.10.11.150
+        #domain otus.lab
+      state: present
+
+  - name: set up repo
+    replace:
+      path: "{{ item }}" 
+      regexp: 'mirrorlist' 
+      replace: '#mirrorlist'
+    with_items:
+      - /etc/yum.repos.d/CentOS-AppStream.repo
+      - /etc/yum.repos.d/CentOS-Base.repo
+    #sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+  - name: set up repo 
+    replace:
+      path: "{{ item }}"
+      regexp: '#baseurl=http://mirror.centos.org' 
+      replace: 'baseurl=http://vault.centos.org'
+    with_items:
+      - /etc/yum.repos.d/CentOS-AppStream.repo 
+      - /etc/yum.repos.d/CentOS-Base.repo
+
+
+- name: Playbook to configure IPA servers
+  hosts: ipaserver
+  become: true
+  roles:
+    - role: ipaserver
+      state: present
+
+- name: Playbook to configure IPA clients with username/password
+  hosts: ipaclient
+  become: true
+  roles:
+    - role: ipaclient
+      state: present
