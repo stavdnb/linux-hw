@@ -1,0 +1,51 @@
+---
+# tasks file for provision/slave-setup
+
+- name: Modify slave config
+  lineinfile:
+    path: "{{ item.path }}"
+    line: "{{ item.line }}"
+    regexp: "{{ item.regexp }}"
+    state: present
+  with_items:
+    - { path: "/etc/my.cnf.d/05-binlog.cnf", regexp: "^replicate-ignore-table=bet.events_on_demand", line: "replicate-ignore-table=bet.events_on_demand" }
+    - { path: "/etc/my.cnf.d/05-binlog.cnf", regexp: "^replicate-ignore-table=bet.v_same_event", line: "replicate-ignore-table=bet.v_same_event" }
+
+- name: Restart MySQL
+  systemd:
+    name: mysql
+    state: restarted
+#
+      #- name: Copy backup.xbstream from host
+      #  copy:
+      #    src: backup.xbstream
+      #    dest: /tmp
+
+      #- name: Xtrabackup restore running
+      #  shell: |
+      #    xbstream -x < /tmp/backup.xbstream
+      #  ignore_errors: yes
+
+- name: Copy master.sql
+  copy:
+    src: master.sql
+    dest: /tmp
+
+- name: Create a bet DB
+  mysql_db:
+    login_user: root
+    login_password: "{{ mysql_password }}"
+    login_unix_socket: "/var/lib/mysql/mysql.sock"
+    name: bet
+    state: present
+
+- name: Load dump database for slave
+  shell: | 
+     mysql --defaults-file=/root/.my.cnf -e 'RESET MASTER;'       
+     mysql --defaults-file=/root/.my.cnf < /tmp/master.sql
+  ignore_errors: yes
+
+- name: Setup and run slave
+  shell: |
+    mysql --defaults-file=/root/.my.cnf -e 'CHANGE MASTER TO MASTER_HOST="10.10.11.150", MASTER_USER="{{ replication_user }}", MASTER_PASSWORD="{{ replication_password }}", MASTER_AUTO_POSITION=1;'
+    mysql  --defaults-file=/root/.my.cnf -e 'START SLAVE;'
