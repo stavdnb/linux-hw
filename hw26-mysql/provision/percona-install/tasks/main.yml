@@ -1,0 +1,79 @@
+---
+# tasks file for provision/percona-install
+#
+- name: Install Percona repository
+  yum:
+    name: https://repo.percona.com/yum/percona-release-latest.noarch.rpm
+    state: present
+
+- name: ipa user add
+  action: command dnf module disable mysql -y
+
+- name: Install Percona server and MySQL-python module
+  yum:
+    name: 
+      - Percona-Server-server-57
+      - python3-pip
+      - python3-PyMySQL
+    state: present
+
+- name: "[RedHat] Ensure Percona XtraBackup is installed"
+  yum:
+    name:
+      - "{{ xtrabackup_package_name }}"
+      - libgcrypt
+      - openssl
+      - qpress
+    update_cache: true
+
+- name: Start MySQL
+  systemd:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Get automate generated mysql password
+  shell: cat /var/log/mysqld.log | grep 'root@localhost:' | awk '{print $11}'
+  #grep 'A temporary password is generated' /var/log/mysqld.log | awk '{print $11}' 
+  register: current_password
+      
+- debug:
+    msg:
+    - "{{ current_password.stdout }}"
+    - "{{ mysql_password }}"
+  
+- name: Set mysql password
+  shell: 
+
+     mysql --connect-expired-password -u 'root' -p'{{ current_password.stdout }}' -e 'ALTER USER USER() IDENTIFIED BY "{{ mysql_password }}";'
+
+
+#'
+
+
+
+- name: Copy Percona configuration files
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/my.cnf.d/"
+  with_fileglob:
+    - files/conf/conf.d/*
+
+- name: Copy .my.cnf
+  template:
+    src: templates/my.cnf.j2
+    dest: /root/.my.cnf
+    mode: 0600  
+
+- name: Copy 01-base.cnf file 
+  template:
+    src: templates/01-base.cnf.j2
+    dest: /etc/my.cnf.d/01-base.cnf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Restart MySQL
+  systemd:
+    name: mysql
+    state: restarted
