@@ -1,0 +1,84 @@
+---
+- hosts: all # part running on all hosts
+  become: true
+  tasks:
+
+  - name: set up repo
+    replace:
+      path: "{{ item }}" 
+      regexp: 'mirrorlist' 
+      replace: '#mirrorlist'
+    with_items:
+      - /etc/yum.repos.d/CentOS-AppStream.repo
+      - /etc/yum.repos.d/CentOS-Base.repo
+
+  - name: set up repo 
+    replace:
+      path: "{{ item }}"
+      regexp: '#baseurl=http://mirror.centos.org' 
+      replace: 'baseurl=http://vault.centos.org'
+    with_items:
+      - /etc/yum.repos.d/CentOS-AppStream.repo 
+      - /etc/yum.repos.d/CentOS-Base.repo
+  - name: Install epel-release # переведём синтаксис yum из deprecated
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - epel-release
+      - python3-pip
+  - name: Disable Ipv6 all
+    sysctl:
+      name: net.ipv6.conf.all.disable_ipv6
+      value: '1'
+      sysctl_set: yes
+      state: present
+      reload: yes
+  - name: Disable Ipv6 default
+    sysctl:
+      name: net.ipv6.conf.default.disable_ipv6
+      value: '1'
+      sysctl_set: yes
+      state: present
+      reload: yes
+
+- name: Установка postgres11
+  hosts: master, slave, backup
+  become: yes
+  roles:
+    - postgres_install
+
+- name: Настройка master
+  hosts: master
+  become: yes
+  roles:
+    - master-setup
+  tags:
+    - master
+
+- name: Настройка slave
+  hosts: slave
+  become: yes
+  roles:
+    - slave-setup
+  tags:
+    - slave
+
+
+- name: Создание тестовой БД
+  hosts: master
+  become: yes
+  roles:
+    - create_test_db
+  tags:
+    - db  
+
+- name: Настройка barman
+  hosts: backup
+  become: yes
+  roles:
+    - barman_install
+  tags:
+    - barman
+
