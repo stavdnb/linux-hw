@@ -1,0 +1,13 @@
+[Unit]
+Description=uWSGI instance to serve Hello World!
+After=network.target
+
+[Service]
+User=nginx
+Group=nginx
+WorkingDirectory=/opt/dweb
+Environment="PATH=/opt/dweb/dweb_env/bin"
+ExecStart=/opt/dweb/dweb_env/bin/uwsgi --ini dweb.ini
+
+[Install]
+WantedBy=multi-user.target
